@@ -3,6 +3,7 @@ package com.portfolio.config;
 import com.portfolio.entity.Admin;
 import com.portfolio.repo.AdminRepo;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -16,6 +17,12 @@ public class AdminDataSeeder implements CommandLineRunner {
 
     @Autowired(required = false)
     private PasswordEncoder passwordEncoder;
+    
+    @Value("${portfolio.app.admin.password}")
+    private String adminPassword;
+    
+    @Value("${portfolio.app.guest.password}")
+    private String guestPassword;
 
     @Override
     public void run(String... args) throws Exception {
@@ -28,24 +35,22 @@ public class AdminDataSeeder implements CommandLineRunner {
                 .findFirst();
 
         if (existingSuperAdmin.isEmpty()) {
-            System.out.println("⚡ Master administrator profile missing. Initializing Super Admin...");
 
             Admin superAdmin = new Admin();
             superAdmin.setUsername("admin"); // Master username credentials
             superAdmin.setName("Shubham Makode");
             
-            String rawPassword = "6267494475";
+            
             if (passwordEncoder != null) {
-                superAdmin.setPassword(passwordEncoder.encode(rawPassword));
+                superAdmin.setPassword(passwordEncoder.encode(adminPassword));
             } else {
-                superAdmin.setPassword(rawPassword);
+                superAdmin.setPassword(adminPassword);
             }
             
             // Assigning Super Admin Role access vectors
             superAdmin.setRole("ROLE_SUPER_ADMIN");
 
             adminRepo.save(superAdmin);
-            System.out.println("✅ Master Admin profile seeded: [Username: admin]");
         }
 
         // ==========================================================================
@@ -56,27 +61,23 @@ public class AdminDataSeeder implements CommandLineRunner {
                 .findFirst();
 
         if (existingGuest.isEmpty()) {
-            System.out.println("⚡ Recruiter preview credentials missing. Initializing Guest Admin...");
 
             Admin guestAdmin = new Admin();
             guestAdmin.setUsername("guest"); // Shared username for technical recruiters
             guestAdmin.setName("Recruiter Guest");
             
             // A simple, clean password for public previewing
-            String rawGuestPassword = "guest123";
             if (passwordEncoder != null) {
-                guestAdmin.setPassword(passwordEncoder.encode(rawGuestPassword));
+                guestAdmin.setPassword(passwordEncoder.encode(guestPassword));
             } else {
-                guestAdmin.setPassword(rawGuestPassword);
+                guestAdmin.setPassword(guestPassword);
             }
             
             // 🔒 Assigning the Read-Only Viewer Role restriction vectors
             guestAdmin.setRole("ROLE_GUEST_VIEWER");
 
             adminRepo.save(guestAdmin);
-            System.out.println("✅ Recruiter Guest profile seeded: [Username: guest, Password: guest123]");
         } else {
-            System.out.println("🌱 System account registries are fully initialized. Seeder step skipped.");
         }
     }
 }
