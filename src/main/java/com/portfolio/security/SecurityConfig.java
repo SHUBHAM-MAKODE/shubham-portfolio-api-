@@ -48,6 +48,8 @@ public class SecurityConfig {
                 
                 // 🌟 2. PUBLIC USER SIDE INTERCEPTOR: Single Bootstrap Hydration Entry Point
                 .requestMatchers("/api/public/portfolio-hub").permitAll()
+                //a get api to keep the server alive and warm for the next 15 minutes
+				.requestMatchers("/api/health").permitAll()
                 
                 // 3. Public visitor standalone endpoint targets
                 .requestMatchers("/api/messages/send", "/api/messages/submit").permitAll() 
