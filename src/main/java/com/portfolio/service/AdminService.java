@@ -90,6 +90,7 @@ public class AdminService {
         }
 
         Admin admin = admins.get(0);
+        Admin guest = admins.size() > 1 ? admins.get(1) : null; // Optional guest profile for dual access
 
         // Verify if incoming raw text matches your saved BCrypt hash
         if (admin.getUsername().equals(authRequest.getUsername()) && 
@@ -103,6 +104,17 @@ public class AdminService {
             structure.setData(generatedToken); // This sends the enriched JWT back to your frontend
             return new ResponseEntity<>(structure, HttpStatus.OK);
         }
+        else if (guest != null && guest.getUsername().equals(authRequest.getUsername()) && 
+				 passwordEncoder.matches(authRequest.getPassword(), guest.getPassword())) {
+			
+			// 🌟 FIXED: Pass BOTH the username AND the role string (e.g., "ROLE_GUEST_VIEWER")
+			String generatedToken = jwtUtil.generateToken(guest.getUsername(), guest.getRole());
+
+			structure.setStatus(HttpStatus.OK.value());
+			structure.setMessage("Authentication successful! Copy your bearer token.");
+			structure.setData(generatedToken); // This sends the enriched JWT back to your frontend
+			return new ResponseEntity<>(structure, HttpStatus.OK);
+		}
 
         structure.setStatus(HttpStatus.UNAUTHORIZED.value());
         structure.setMessage("Invalid username or password configuration.");

@@ -15,6 +15,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 public class ProjectService {
@@ -96,5 +97,59 @@ public class ProjectService {
         structure.setData("Deleted Project ID: " + id);
 
         return new ResponseEntity<>(structure, HttpStatus.OK);
+    }
+ // Add these imports at the top if they aren't there
+
+    // ... inside your ProjectService class:
+
+    /**
+     * UPDATE EXISTING PROJECT REPOSITORY
+     * Patches text properties, tech stacks, external URLs, and replaces media assets if provided.
+     */
+    public ResponseEntity<ResponseStructure<Project>> updateProject(long id, Project updatedProject, MultipartFile imageFile) {
+        ResponseStructure<Project> structure = new ResponseStructure<>();
+        Optional<Project> optionalExisting = projectRepo.findById((int)id);
+
+        // 1. Check if the project exists in the database schema
+        if (optionalExisting.isEmpty()) {
+            structure.setStatus(HttpStatus.NOT_FOUND.value());
+            structure.setMessage("Project with ID " + id + " does not exist.");
+            structure.setData(null);
+            return new ResponseEntity<>(structure, HttpStatus.NOT_FOUND);
+        }
+
+        Project existingProject = optionalExisting.get();
+
+        // 2. Patch the mutable text attributes and metadata tracks
+        existingProject.setTitle(updatedProject.getTitle());
+        existingProject.setDescription(updatedProject.getDescription());
+        existingProject.setTechStack(updatedProject.getTechStack());
+        existingProject.setLiveUrl(updatedProject.getLiveUrl());
+        existingProject.setGithubUrl(updatedProject.getGithubUrl()); // 🌟 This ensures your GitHub URL updates cleanly!
+
+        try {
+            // 3. If a fresh mockup/screenshot file is sent, upload it to Cloudinary and overwrite old paths
+            if (imageFile != null && !imageFile.isEmpty()) {
+                // Optional: If you want to delete the old asset from Cloudinary using existingProject.getImagePublicId(), do it here.
+                
+                Map<String, Object> uploadResult = mediaService.uploadFile(imageFile, "projects");
+                existingProject.setImageUrl((String) uploadResult.get("secure_url"));
+                existingProject.setImagePublicId((String) uploadResult.get("public_id"));
+            }
+
+            // 4. Persist updated values back to the relational database records
+            Project savedProject = projectRepo.save(existingProject);
+
+            structure.setStatus(HttpStatus.OK.value());
+            structure.setMessage("Project profile modified and synchronized successfully.");
+            structure.setData(savedProject);
+            return new ResponseEntity<>(structure, HttpStatus.OK);
+
+        } catch (IOException e) {
+            structure.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
+            structure.setMessage("Failed to overwrite project image assets on CDN: " + e.getMessage());
+            structure.setData(null);
+            return new ResponseEntity<>(structure, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 }

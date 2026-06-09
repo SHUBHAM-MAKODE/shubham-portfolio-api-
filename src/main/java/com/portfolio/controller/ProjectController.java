@@ -60,4 +60,30 @@ public class ProjectController {
     public ResponseEntity<ResponseStructure<String>> removeProject(@PathVariable int id) {
         return projectService.deleteProject(id);
     }
+ // ... inside your ProjectController class:
+
+    /**
+     * UPDATE DATA ATTRIBUTES AND CDN IMAGES
+     * 🔒 SECURED: Blocked for guest endpoints. Only accessible with an authorized admin signature header.
+     */
+    @PutMapping(value = "/update/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ResponseStructure<Project>> modifyProject(
+            @PathVariable("id") long id,
+            @RequestParam("title") String title,
+            @RequestParam("description") String description,
+            @RequestParam("techStack") List<String> techStack, 
+            @RequestParam(value = "liveUrl", required = false) String liveUrl,
+            @RequestParam(value = "githubUrl", required = false) String githubUrl,
+            @RequestParam(value = "file", required = false) MultipartFile file) {
+        
+        // Package incoming params into a transient Project model carrier object
+        Project projectDetails = new Project();
+        projectDetails.setTitle(title);
+        projectDetails.setDescription(description);
+        projectDetails.setTechStack(techStack);
+        projectDetails.setLiveUrl(liveUrl);
+        projectDetails.setGithubUrl(githubUrl);
+        
+        return projectService.updateProject(id, projectDetails, file);
+    }
 }
